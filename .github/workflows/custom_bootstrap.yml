@@ -28,6 +28,10 @@ jobs:
       - name: Pull builder image
         run: docker pull ghcr.io/termux/package-builder:latest
 
+      - name: Pre-install SDK components for termux-am
+        run: |
+          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=$(ls -d /home/builder/lib/android-sdk* | head -n1); echo "ANDROID_HOME=$ANDROID_HOME"; df -h /home/builder | tail -1; yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "build-tools;30.0.3"; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"'
+
       - name: Build bootstrap for aarch64
         run: |
           ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64
