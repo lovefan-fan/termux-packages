@@ -1,0 +1,50 @@
+name: Build custom bootstrap (com.yaohuo)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/custom_bootstrap.yml'
+      - 'scripts/**'
+      - 'packages/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    container:
+      image: ghcr.io/termux/package-builder:latest
+      options: --user 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Link repo to builder path
+        run: |
+          mkdir -p /home/builder /data/data
+          ln -sfn "$GITHUB_WORKSPACE" /home/builder/termux-packages
+
+      - name: Patch package name to com.yaohuo
+        run: |
+          cd /home/builder/termux-packages
+          sed -i 's|^TERMUX_APP__PACKAGE_NAME="com.termux"|TERMUX_APP__PACKAGE_NAME="com.yaohuo"|' scripts/properties.sh
+          grep -n 'TERMUX_APP__PACKAGE_NAME="com' scripts/properties.sh
+
+      - name: Build bootstrap for aarch64
+        run: |
+          cd /home/builder/termux-packages
+          ./scripts/build-bootstraps.sh --architectures aarch64
+
+      - name: Show artifacts
+        run: ls -lh /home/builder/termux-packages/bootstrap-*.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-aarch64-com-yaohuo
+          path: /home/builder/termux-packages/bootstrap-*.zip
+          retention-days: 30
