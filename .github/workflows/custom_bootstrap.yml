@@ -18,14 +18,14 @@ jobs:
     timeout-minutes: 360
     container:
       image: ghcr.io/termux/package-builder:latest
-      options: --user 0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Link repo to builder path
         run: |
-          mkdir -p /home/builder /data/data
+          sudo mkdir -p /data/data
+          sudo chown -R builder:builder /data/data
           rm -rf /home/builder/termux-packages
           ln -sfn "$GITHUB_WORKSPACE" /home/builder/termux-packages
           ls -l /home/builder/termux-packages/scripts/properties.sh
