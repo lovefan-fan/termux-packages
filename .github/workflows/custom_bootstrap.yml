@@ -39,6 +39,7 @@ jobs:
       - name: Build bootstrap for aarch64
         run: |
           cd /home/builder/termux-packages
+          export HOME=/home/builder
           ./scripts/build-bootstraps.sh --architectures aarch64
 
       - name: Show artifacts
