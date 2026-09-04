@@ -26,7 +26,9 @@ jobs:
       - name: Link repo to builder path
         run: |
           mkdir -p /home/builder /data/data
+          rm -rf /home/builder/termux-packages
           ln -sfn "$GITHUB_WORKSPACE" /home/builder/termux-packages
+          ls -l /home/builder/termux-packages/scripts/properties.sh
 
       - name: Patch package name to com.yaohuo
         run: |
