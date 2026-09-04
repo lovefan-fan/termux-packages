@@ -16,38 +16,28 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
-    container:
-      image: ghcr.io/termux/package-builder:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Link repo to builder path
-        run: |
-          sudo mkdir -p /data/data
-          sudo chown -R builder:builder /data/data
-          rm -rf /home/builder/termux-packages
-          ln -sfn "$GITHUB_WORKSPACE" /home/builder/termux-packages
-          ls -l /home/builder/termux-packages/scripts/properties.sh
-
       - name: Patch package name to com.yaohuo
         run: |
-          cd /home/builder/termux-packages
           sed -i 's|^TERMUX_APP__PACKAGE_NAME="com.termux"|TERMUX_APP__PACKAGE_NAME="com.yaohuo"|' scripts/properties.sh
           grep -n 'TERMUX_APP__PACKAGE_NAME="com' scripts/properties.sh
 
+      - name: Pull builder image
+        run: docker pull ghcr.io/termux/package-builder:latest
+
       - name: Build bootstrap for aarch64
         run: |
-          cd /home/builder/termux-packages
-          export HOME=/home/builder
-          ./scripts/build-bootstraps.sh --architectures aarch64
+          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64
 
       - name: Show artifacts
-        run: ls -lh /home/builder/termux-packages/bootstrap-*.zip
+        run: ls -lh bootstrap-*.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-aarch64-com-yaohuo
-          path: /home/builder/termux-packages/bootstrap-*.zip
+          path: bootstrap-*.zip
           retention-days: 30
