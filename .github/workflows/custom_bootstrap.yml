@@ -25,16 +25,24 @@ jobs:
           sed -i 's|^TERMUX_APP__PACKAGE_NAME="com.termux"|TERMUX_APP__PACKAGE_NAME="com.yaohuo"|' scripts/properties.sh
           grep -n 'TERMUX_APP__PACKAGE_NAME="com' scripts/properties.sh
 
+      - name: Setup Android SDK on runner
+        run: |
+          SDK="$GITHUB_WORKSPACE/build-tools/android-sdk"
+          mkdir -p "$SDK"
+          curl -sL -o /tmp/clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/clt.zip -d /tmp/clt
+          mkdir -p "$SDK/cmdline-tools"
+          mv /tmp/clt/cmdline-tools "$SDK/cmdline-tools/latest"
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platforms;android-33" "platforms;android-35" "platforms;android-28" "platforms;android-24" "build-tools;30.0.3" "build-tools;37.0.0"
+          ls "$SDK/platforms" "$SDK/build-tools"
+
       - name: Pull builder image
         run: docker pull ghcr.io/termux/package-builder:latest
 
-      - name: Pre-install SDK components for termux-am
-        run: |
-          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=$(ls -d /home/builder/lib/android-sdk* | head -n1); echo "ANDROID_HOME=$ANDROID_HOME"; df -h /home/builder | tail -1; yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "build-tools;30.0.3"; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"'
-
       - name: Build bootstrap for aarch64
         run: |
-          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=$(ls -d /home/builder/lib/android-sdk* | head -n1); export NDK=$(ls -d /home/builder/lib/android-ndk* | head -n1); export HOME=/home/builder; echo "ANDROID_HOME=$ANDROID_HOME NDK=$NDK"; cd /home/builder/termux-packages && ./scripts/build-bootstraps.sh --architectures aarch64'
+          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=/home/builder/termux-packages/build-tools/android-sdk; export NDK=$(ls -d /home/builder/lib/android-ndk* | head -n1); export HOME=/home/builder; echo "ANDROID_HOME=$ANDROID_HOME NDK=$NDK"; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"; cd /home/builder/termux-packages && ./scripts/build-bootstraps.sh --architectures aarch64'
 
       - name: Show artifacts
         run: ls -lh bootstrap-*.zip
