@@ -42,7 +42,7 @@ jobs:
 
       - name: Build bootstrap for aarch64
         run: |
-          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=/home/builder/termux-packages/build-tools/android-sdk; export NDK=$(ls -d /home/builder/lib/android-ndk* | head -n1); export HOME=/home/builder; echo "ANDROID_HOME=$ANDROID_HOME NDK=$NDK"; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"; cd /home/builder/termux-packages && ./scripts/build-bootstraps.sh --architectures aarch64'
+          ./scripts/run-docker.sh bash -lc 'export ANDROID_HOME=/home/builder/termux-packages/build-tools/android-sdk; export NDK=$(ls -d /home/builder/lib/android-ndk* | head -n1); export HOME=/home/builder; cd /home/builder/termux-packages && ./scripts/build-bootstraps.sh --architectures aarch64; echo "== cwd: $(pwd) =="; Z=$(find / -name "bootstrap-aarch64.zip" 2>/dev/null | head -n1); echo "== found zip: $Z =="; cp "$Z" /home/builder/termux-packages/bootstrap-aarch64.zip; ls -lh /home/builder/termux-packages/bootstrap-aarch64.zip'
 
       - name: Show artifacts
         run: ls -lh bootstrap-*.zip
