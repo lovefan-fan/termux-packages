@@ -19,7 +19,7 @@ termux_step_configure() {
 }
 
 termux_step_make() {
-	make CC="$CC" CFLAGS="$CFLAGS $CPPFLAGS" LDFLAGS="$LDFLAGS" -j"$TERMUX_PKG_MAKE_PROCESSES"
+	make CC="$CC" CFLAGS="$CFLAGS $CPPFLAGS" LDFLAGS="$LDFLAGS" -j"$TERMUX_PKG_MAKE_PROCESSES" bzip2 bzip2recover
 }
 
 termux_step_make_install() {
