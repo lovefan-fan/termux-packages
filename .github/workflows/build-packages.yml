@@ -1,0 +1,61 @@
+name: Build extra packages for com.yaohuo repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: '包名（空格分隔），例如: qbittorrent aria2'
+        required: true
+        default: 'aria2'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch package name to com.yaohuo
+        run: sed -i 's|^TERMUX_APP__PACKAGE_NAME="com.termux"|TERMUX_APP__PACKAGE_NAME="com.yaohuo"|' scripts/properties.sh
+
+      - name: Setup Android SDK on runner
+        run: |
+          SDK="$GITHUB_WORKSPACE/build-tools/android-sdk"
+          mkdir -p "$SDK"
+          curl -sL -o /tmp/clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/clt.zip -d /tmp/clt
+          mkdir -p "$SDK/cmdline-tools"
+          mv /tmp/clt/cmdline-tools "$SDK/cmdline-tools/latest"
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platforms;android-33" "platforms;android-35" "platforms;android-28" "platforms;android-24" "build-tools;30.0.3" "build-tools;37.0.0" || true
+
+      - name: Pull builder image
+        run: docker pull ghcr.io/termux/package-builder:latest
+
+      - name: Build packages
+        run: |
+          ./scripts/run-docker.sh bash -lc 'export TERMUX_APP_PACKAGE=com.yaohuo; export TERMUX_BASE_DIR=/data/data/com.yaohuo/files; export ANDROID_HOME=/home/builder/termux-packages/build-tools/android-sdk; export NDK=$(ls -d /home/builder/lib/android-ndk* | head -n1); export HOME=/home/builder; cd /home/builder/termux-packages && for p in ${{ inputs.packages }}; do ./build-package.sh -a aarch64 "$p" || exit 1; done; ls -lh output/ | tail -30'
+
+      - name: Update repo on gh-pages
+        run: |
+          git clone --depth 1 -b gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/lovefan-fan/termux-packages.git repo-pages
+          mkdir -p repo-pages/dists/stable/main/binary-aarch64
+          for d in output/*.deb; do
+            name=$(basename "$d" | sed 's/_[^_]*_aarch64.deb//')
+            rm -f repo-pages/${name}_*_aarch64.deb
+            cp "$d" repo-pages/
+          done
+          cd repo-pages
+          sudo apt-get install -y -qq dpkg-dev >/dev/null 2>&1 || true
+          dpkg-scanpackages -m . /dev/null > Packages 2>/dev/null
+          gzip -kf Packages
+          cp Packages Packages.gz dists/stable/main/binary-aarch64/
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Add packages: ${{ inputs.packages }}" || echo "no changes"
+          git push
