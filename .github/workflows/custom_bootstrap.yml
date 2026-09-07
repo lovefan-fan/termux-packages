@@ -55,6 +55,7 @@ jobs:
           publish_dir: ./output
           publish_branch: gh-pages
           force_orphan: true
+          exclude_assets: 'bootstrap-*.zip'
 
       - name: Show artifacts
         run: ls -lh output/bootstrap-*.zip
